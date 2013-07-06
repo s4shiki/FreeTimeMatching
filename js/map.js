@@ -1,3 +1,6 @@
+var map; // マップ
+var infowindow; // マーカーの詳細表示
+
 // マップオブジェクトを作成し、マーカーを表示
 function initialize(){
 	var myLatLng = geoLocate(); // MAPの初期位置
@@ -10,7 +13,19 @@ function initialize(){
 		zoom:11,
 		mapTypeId: google.maps.MapTypeId.ROADMAP
 	};
-	var map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+	map = new google.maps.Map(document.getElementById("map_canvas"), mapOptions);
+	
+	// ユーザのマーカーアイコンを変更
+	var markerImage = new google.maps.MarkerImage(
+		// 画像の場所
+		"http://blog-imgs-44.fc2.com/p/c/r/pcrice/mark2.png",
+		// マーカーのサイズ
+		new google.maps.Size(20, 24),
+		// 画像の基準位置
+		new google.maps.Point(0, 0),
+		// Anchorポイント
+		new google.maps.Point(10, 24)
+	);
 	
 	// 現在地のマーカー表示
 	var marker = new google.maps.Marker({
@@ -18,7 +33,8 @@ function initialize(){
 		draggable:false,
 		animation: google.maps.Animation.DROP,
 		position: myLatLng,
-		title: "現在地"
+		title: "現在地",
+		icon: markerImage
 	});
 	
 	// サークルオプションの設定
@@ -35,8 +51,41 @@ function initialize(){
 	
 	// サークル表示（半径10k）
 	var circle = new google.maps.Circle(circleOptions); 
+	
+	// プレイス検索
+	var request = {
+		location: myLatLng,
+		radius: '10000',
+	};
+	infowindow = new google.maps.InfoWindow();
+	var service = new google.maps.places.PlacesService(map);
+	service.search(request, callback);
 }
 google.maps.event.addDomListener(window, 'load', initialize); // Windowがロードされたとき表示させる
+
+// プレイス検索のコールバック関数
+function callback(results, status){
+	if (status == google.maps.places.PlacesServiceStatus.OK) {
+		for (var i = 0; i < results.length; i++) {
+			var place = results[i];
+			createMarker(results[i]);
+		}
+	}
+}
+
+// プレイス検索のときに表示するマーカー
+function createMarker(place) {
+	var placeLoc = place.geometry.location;
+	var marker = new google.maps.Marker({
+		map: map,
+		position: place.geometry.location
+	});
+
+	google.maps.event.addListener(marker, 'click', function() {
+		infowindow.setContent(place.name);
+		infowindow.open(map, this);
+	});
+}
 
 // 現在地取得
 function geoLocate(){
