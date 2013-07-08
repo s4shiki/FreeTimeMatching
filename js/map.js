@@ -1,13 +1,52 @@
 var map; // マップ
 var infowindow; // マーカーの詳細表示
 
-// マップオブジェクトを作成し、マーカーを表示
-function initialize(){
-	var myLatLng = geoLocate(); // MAPの初期位置
+google.maps.event.addDomListener(window, 'load', getLatLng); // Windowがロードされたとき表示させる
+
+// 位置情報を取得
+function getLatLng(){
+	// 位置情報取得のオプション。高精度にする
+	var position_options = {
+		enableHightAccuracy: true
+	};
+	// 現在地取得（変わる毎に更新）成功時と失敗時でコールバック関数を呼ぶ
+	navigator.geolocation.getCurrentPosition(success, fatal, position_options);
+}
+
+//位置情報取得成功時のコールバック関数
+function success(position){
+	var myLatLng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
+	initialize(myLatLng); // マップオブジェクト作成関数呼び出し
+}
 	
-	if (myLatLng == null){ // 位置情報取得に失敗した場合、東京駅をセンターにしてMAP表示
-		myLatLng = new google.maps.LatLng(35.681382, 139.766084);
+// 位置情報取得失敗時のコールバック関数
+function fatal(error){
+	var message = "";
+
+	switch(error.code){
+		// 位置情報が取得出来ない場合
+		case error.POSITION_UNAVAILABLE:
+			message = "位置情報の取得ができませんでした。";
+			break;
+		// Geolocationの使用が許可されない場合
+		case error.PERMISSION_DENIED:
+			message = "位置情報取得の使用許可がされませんでした。";
+			break;
+		// タイムアウトした場合
+		case error.PERMISSION_DENIED_TIMEOUT:
+			message = "位置情報取得中にタイムアウトしました。";
+			break;
 	}
+	window.alert(message);
+	
+	// 位置情報取得に失敗した場合、東京駅をセンターにしてMAP表示
+	var myLatLng = new google.maps.LatLng(35.681382, 139.766084);
+	
+	initialize(myLatLng); // マップオブジェクト作成関数呼び出し
+}
+
+// マップオブジェクトを作成し、マーカーを表示
+function initialize(myLatLng){
 	var mapOptions = {
 		center: myLatLng,
 		zoom:11,
@@ -61,7 +100,6 @@ function initialize(){
 	var service = new google.maps.places.PlacesService(map);
 	service.search(request, callback);
 }
-google.maps.event.addDomListener(window, 'load', initialize); // Windowがロードされたとき表示させる
 
 // プレイス検索のコールバック関数
 function callback(results, status){
@@ -85,42 +123,4 @@ function createMarker(place) {
 		infowindow.setContent(place.name);
 		infowindow.open(map, this);
 	});
-}
-
-// 現在地取得
-function geoLocate(){
-	// 位置情報取得のオプション。高精度にする
-	var position_options = {
-		enableHightAccuracy: true
-	};
-	// 現在地取得（変わる毎に更新）
-	navigator.geolocation.watchPosition(success, fatal, position_options);
-	
-	//位置情報取得成功時
-	function success(position){
-		var myLatLng = new google.maps.LatLng(position.coords.latitude, position.coords.longitude);
-		return myLatLng;
-	}
-	
-	// 位置情報取得失敗時
-	function fatal(error){
-		var message = "";
-		
-		switch(error.code){
-			// 位置情報が取得出来ない場合
-			case error.POSITION_UNAVAILABLE:
-				message = "位置情報の取得ができませんでした。";
-				break;
-			// Geolocationの使用が許可されない場合
-			case error.PERMISSION_DENIED:
-				message = "位置情報取得の使用許可がされませんでした。";
-				break;
-			// タイムアウトした場合
-			case error.PERMISSION_DENIED_TIMEOUT:
-				message = "位置情報取得中にタイムアウトしました。";
-				break;
-		}
-		window.alert(message);
-		return null;
-	}
 }
